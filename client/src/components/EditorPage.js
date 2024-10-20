@@ -17,7 +17,7 @@ const LANGUAGES = [
   "python3",
   "java",
   "cpp",
-  "nodejs",
+  "javascript",
   "c",
   "ruby",
   "go",
@@ -114,12 +114,17 @@ function EditorPage() {
   const runCode = async () => {
     setIsCompiling(true);
     try {
+      // console.log(codeRef.current);
       const response = await axios.post("http://localhost:5000/compile", {
         code: codeRef.current,
         language: selectedLanguage,
       });
       console.log("Backend response:", response.data);
-      setOutput(response.data.output || JSON.stringify(response.data));
+      if (response.data.error) {
+        setOutput(`Error: ${response.data.error}`);
+      } else {
+        setOutput(response.data.stdout || JSON.stringify(response.data.stdout));
+      }
     } catch (error) {
       console.error("Error compiling code:", error);
       setOutput(error.response?.data?.error || "An error occurred");
@@ -173,7 +178,10 @@ function EditorPage() {
             <select
               className="form-select w-auto"
               value={selectedLanguage}
-              onChange={(e) => setSelectedLanguage(e.target.value)}
+              onChange={(e) => {
+                console.log("changed to:",e.target.value);
+                setSelectedLanguage(e.target.value);
+              }}
             >
               {LANGUAGES.map((lang) => (
                 <option key={lang} value={lang}>

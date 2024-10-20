@@ -4,27 +4,28 @@ const http = require("http");
 const { Server } = require("socket.io");
 const ACTIONS = require("./Actions");
 const cors = require("cors");
+const path = require('path');
 const axios = require("axios");
 const server = http.createServer(app);
 require("dotenv").config();
 
-const languageConfig = {
-  python3: { versionIndex: "3" },
-  java: { versionIndex: "3" },
-  cpp: { versionIndex: "4" },
-  nodejs: { versionIndex: "3" },
-  c: { versionIndex: "4" },
-  ruby: { versionIndex: "3" },
-  go: { versionIndex: "3" },
-  scala: { versionIndex: "3" },
-  bash: { versionIndex: "3" },
-  sql: { versionIndex: "3" },
-  pascal: { versionIndex: "2" },
-  csharp: { versionIndex: "3" },
-  php: { versionIndex: "3" },
-  swift: { versionIndex: "3" },
-  rust: { versionIndex: "3" },
-  r: { versionIndex: "3" },
+const ext = {
+  python: "py",
+  java: "java",
+  cpp: "cpp",
+  javascript: "js",
+  c: "c",
+  go: "go",
+  php: "php",
+  r: "r",
+  ruby: "rb",
+  scala: "scala",
+  bash: "sh",
+  sql: "sql",
+  pascal: "pas",
+  csharp: "cs",
+  swift: "swift",
+  rust: "rs",
 };
 
 // Enable CORS
@@ -38,6 +39,13 @@ const io = new Server(server, {
     origin: "http://localhost:3000",
     methods: ["GET", "POST"],
   },
+});
+
+app.use(express.static(path.join(__dirname, 'build')));
+
+// Handle all GET requests by serving the React frontend
+app.get('/*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 const userSocketMap = {};
@@ -68,6 +76,7 @@ io.on("connection", (socket) => {
     });
   });
 
+
   // sync the code
   socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
     socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code });
@@ -87,28 +96,37 @@ io.on("connection", (socket) => {
         username: userSocketMap[socket.id],
       });
     });
-
     delete userSocketMap[socket.id];
     socket.leave();
   });
 });
 
+
 app.post("/compile", async (req, res) => {
   const { code, language } = req.body;
 
   try {
-    const response = await axios.post("https://api.jdoodle.com/v1/execute", {
-      script: code,
-      language: language,
-      versionIndex: languageConfig[language].versionIndex,
-      clientId: process.env.jDoodle_clientId,
-      clientSecret: process.env.kDoodle_clientSecret,
-    });
+    console.log("here : \n");
+    console.log(code);
+    console.log(language);
+  const response = await axios.post(`https://glot.io/api/run/${language}/latest`, {
+    files: [
+      {
+          name : `scripts.${ext[language]}`,
+          content: code
+      }
+    ]
+    }, {
+    headers: {
+      'Authorization': process.env.GLOT ,
+      'Content-Type': 'application/json'
+    }
+  });
 
-    res.json(response.data);
+  res.json(response.data);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to compile code" });
+  console.error(error);
+  res.status(500).json({ error: "Failed to compile code" });
   }
 });
 
