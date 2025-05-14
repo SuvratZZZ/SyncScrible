@@ -11,6 +11,7 @@ import {
 } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import axios from "axios";
+import { REACT_APP_BACKEND_URL } from "../vars/vars";
 
 // List of supported languages
 const LANGUAGES = [
@@ -115,7 +116,7 @@ function EditorPage() {
     setIsCompiling(true);
     try {
       // console.log(codeRef.current);
-      const response = await axios.post("http://localhost:5000/compile", {
+      const response = await axios.post(`${REACT_APP_BACKEND_URL}/compile`, {
         code: codeRef.current,
         language: selectedLanguage,
       });
